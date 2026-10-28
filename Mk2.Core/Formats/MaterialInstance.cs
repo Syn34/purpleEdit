@@ -1,7 +1,6 @@
 using Mk2.IO;
 
-namespace Mk2.Formats
-{
+namespace Mk2.Formats {
     public enum BlendMode { Opaque = 0, Additive = 1, Subtractive = 2 }
 
     /// <summary>
@@ -20,11 +19,12 @@ namespace Mk2.Formats
     ///   0x140 f32  uv scroll U, 0x144 f32 uv scroll V
     ///   0x1DC u32  ?, 0x1E0 u32 flags:
     ///        0x0001 collision material, 0x0060 grass, 0x0100 double-sided ("_NC"/"_DS"),
-    ///        0x2000 alpha test, 0x8000 texture override present, 0x80000 uv scroll,
-    ///        0x40000000 glow/HDR pass (?), 0x80000000 environment map (?)
+    ///        0x2000 alpha test, 0x8000 ? (seen only on "b"-suffixed siblings of some materials;
+    ///        does not affect UVs or wrap -- those siblings have identical UV ranges to the
+    ///        non-"b" material, confirmed against D06_02's actual vertex data. Meaning unknown),
+    ///        0x80000 uv scroll, 0x40000000 glow/HDR pass (?), 0x80000000 environment map (?)
     /// </summary>
-    public sealed class Material
-    {
+    public sealed class Material {
         public string Name;
         public string TextureName;
         public string GrassType;
@@ -41,15 +41,15 @@ namespace Mk2.Formats
         public bool IsCollisionMaterial => (Flags & 1) != 0;
         public bool Scrolls => (Flags & 0x80000) != 0 && (ScrollU != 0 || ScrollV != 0);
         public bool Glow => (Flags & 0x40000000) != 0;
+        /// <summary>Bit 0x4: sphere-mapped from the normal (stored UVs are placeholders). Set on every R_Elec crystal material, absent on e.g. RSwamp_0002 (0x40000002) which shares the Glow bit. Inferred from data, not confirmed against the engine.</summary>
+        public bool EnvMapped => (Flags & 0x4) != 0;
 
-        public static Material Parse(byte[] data, string fallbackName = null)
-        {
+        public static Material Parse(byte[] data, string fallbackName = null) {
             var reader = new Bin(data);
             var material = new Material();
             material.Name = reader.FixedStr(0, 32);
             if (string.IsNullOrEmpty(material.Name)) material.Name = fallbackName;
-            if (data.Length < 0x1E4)
-            {
+            if (data.Length < 0x1E4) {
                 material.TextureName = material.Name;
                 return material;
             }

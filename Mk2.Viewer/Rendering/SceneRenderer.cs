@@ -439,6 +439,8 @@ namespace Mk2.Viewer.Rendering {
 
             meshShader.Use();
             meshShader.Set("uViewProj", viewProj);
+            meshShader.Set("uView", mirror * view);
+            meshShader.Set("uEnv", false);
             meshShader.Set("uTex", 0);
             meshShader.Set("uLightDir", Vector3.Normalize(new Vector3(0.4f, 1f, 0.3f)));
             meshShader.Set("uFog", settings.Fog);
@@ -647,7 +649,15 @@ namespace Mk2.Viewer.Rendering {
                 bool useTex = settings.Textures && part.Texture != 0;
                 meshShader.Set("uUseTex", useTex);
                 meshShader.Set("uUseVCol", settings.VertexColors);
+                // R_Elec crystal textures (e.g. R_Elec_0004.tex) already have the facet highlight
+                // baked into the pixel data -- confirmed by decoding the texture directly. Adding
+                // the normal-based mix(0.6,1.1,facing) term on top double-applies shading and washes
+                // out the painted highlight instead of sharpening it, which is the opposite of the
+                // reference look. Left off for regular geometry pending a real per-material signal
+                // for which materials want it (most likely none of the texture-authored ones do).
                 meshShader.Set("uLighting", part.IsCollisionComponent);
+                // Materials with flag bit 0x4 (the R_Elec crystals) have placeholder stored UVs; the game sphere-maps them from the normal.
+                meshShader.Set("uEnv", settings.EnvMapGlow && material.EnvMapped && !part.IsCollisionComponent);
                 float alphaReference = 0f;
                 if (useTex && (material.AlphaTest || part.TextureIsCutout || (part.TextureHasAlpha && !transparent)))
                     alphaReference = material.AlphaRef > 0 ? material.AlphaRef : 0.5f;

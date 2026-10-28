@@ -39,8 +39,8 @@ namespace Mk2.Viewer.Frames {
             browser = new BrowserFrame(this);
             properties = new PropertiesFrame(this);
             log = new LogFrame(this) { isOpen = false };
-            modelViewer = new ModelViewerFrame(this);
-            textureViewer = new TextureViewerFrame(this);
+            modelViewer = new ModelViewerFrame(this) { isOpen = false };
+            textureViewer = new TextureViewerFrame(this) { isOpen = false };
             mainView = new MainViewFrame(this);
             frames.AddRange(new Frame[] { renderModes, browser, properties, log, modelViewer, textureViewer, mainView });
 
@@ -61,7 +61,7 @@ namespace Mk2.Viewer.Frames {
         private void RenderDockSpace() {
             var hostFlags = ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse |
                             ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus |
-                            ImGuiWindowFlags.NoNavFocus | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.MenuBar;
+                            ImGuiWindowFlags.NoNavFocus | ImGuiWindowFlags.NoBackground;
 
             var viewport = ImGui.GetMainViewport();
             ImGui.SetNextWindowPos(viewport.WorkPos);
@@ -85,17 +85,17 @@ namespace Mk2.Viewer.Frames {
         private unsafe void BuildDefaultLayout(uint dockspaceId) {
             ImGuiP.DockBuilderSetNodeSize(dockspaceId, ImGui.GetMainViewport().WorkSize);
             uint center = dockspaceId;
-            uint left, right, bottom, rightBottom;
-            ImGuiP.DockBuilderSplitNode(center, ImGuiDir.Left, 0.22f, &left, &center);
-            ImGuiP.DockBuilderSplitNode(center, ImGuiDir.Right, 0.25f, &right, &center);
-            ImGuiP.DockBuilderSplitNode(center, ImGuiDir.Down, 0.22f, &bottom, &center);
-            ImGuiP.DockBuilderSplitNode(right, ImGuiDir.Down, 0.6f, &rightBottom, &right);
+            uint left, right, bottom, leftBottom;
+            ImGuiP.DockBuilderSplitNode(center, ImGuiDir.Left, 0.20f, &left, &center);
+            ImGuiP.DockBuilderSplitNode(center, ImGuiDir.Right, 0.22f, &right, &center);
+            ImGuiP.DockBuilderSplitNode(center, ImGuiDir.Down, 0.15f, &bottom, &center);
+            ImGuiP.DockBuilderSplitNode(left, ImGuiDir.Down, 0.5f, &leftBottom, &left);
             ImGuiP.DockBuilderDockWindow(textureViewer.WindowTitle, center);
             ImGuiP.DockBuilderDockWindow(modelViewer.WindowTitle, center);
             ImGuiP.DockBuilderDockWindow(mainView.WindowTitle, center);
             ImGuiP.DockBuilderDockWindow(browser.WindowTitle, left);
-            ImGuiP.DockBuilderDockWindow(renderModes.WindowTitle, right);
-            ImGuiP.DockBuilderDockWindow(properties.WindowTitle, rightBottom);
+            ImGuiP.DockBuilderDockWindow(renderModes.WindowTitle, leftBottom);
+            ImGuiP.DockBuilderDockWindow(properties.WindowTitle, right);
             ImGuiP.DockBuilderDockWindow(log.WindowTitle, bottom);
             ImGuiP.DockBuilderFinish(dockspaceId);
         }
@@ -107,51 +107,57 @@ namespace Mk2.Viewer.Frames {
                 var level = Viewer.Levels.FirstOrDefault(candidate => candidate.Name == name);
                 if (level != null) _ = Viewer.LoadLevel(level);
             });
+            /*
             RenderListMenu("Packs", ref packFilter,
                 Viewer.Game?.ChunkPackNames.OrderBy(name => name, StringComparer.OrdinalIgnoreCase) ?? Enumerable.Empty<string>(),
                 name => _ = Viewer.LoadPack(name));
-
+            */
+            /*
             if (ImGui.BeginMenu("View")) {
                 if (ImGui.MenuItem("Frame scene")) Viewer.FrameScene();
                 if (ImGui.MenuItem("Focus selection", "F")) Viewer.FocusSelection();
                 ImGui.EndMenu();
             }
+            */
 
             if (ImGui.BeginMenu("Windows")) {
                 MenuToggle("Main View", mainView);
                 MenuToggle("Render", renderModes);
                 MenuToggle("Browser", browser);
                 MenuToggle("Model Viewer", modelViewer);
-                MenuToggle("Texture Viewer", textureViewer);
+                // MenuToggle("Texture Viewer", textureViewer);
                 MenuToggle("Properties", properties);
-                MenuToggle("Log", log);
+                // MenuToggle("Log", log);
                 if (ImGui.MenuItem("Reset layout")) dockLayoutBuilt = false;
                 ImGui.EndMenu();
             }
 
-            ImGui.SameLine(ImGui.GetWindowWidth() - 420);
-            ImGui.TextDisabled(Viewer.Status);
+            //ImGui.SameLine(ImGui.GetWindowWidth() - 420);
+            //ImGui.TextDisabled(Viewer.Status);
             ImGui.EndMainMenuBar();
         }
 
         private void RenderFileMenu() {
             if (!ImGui.BeginMenu("File")) return;
-            if (ImGui.MenuItem("Open game folder…")) {
+            /*if (ImGui.MenuItem("Open game folder")) {
                 string folder = CrossFileDialog.OpenFolder("Game folder");
                 if (folder.Length > 0) _ = Viewer.OpenGameSource(folder);
-            }
-            if (ImGui.MenuItem("Open RKV…")) {
+            }*/
+            if (ImGui.MenuItem("Open RKV")) {
                 string archive = CrossFileDialog.OpenFile("RKV archive", "*.rkv *.bpk");
                 if (archive.Length > 0) _ = Viewer.OpenGameSource(archive);
             }
-            if (ImGui.MenuItem("Extract RKV…", "", false, !Viewer.Busy)) {
+            /*
+            if (ImGui.MenuItem("Extract RKV", "", false, !Viewer.Busy)) {
                 string archive = CrossFileDialog.OpenFile("RKV archive", "*.rkv *.bpk");
                 string folder = archive.Length > 0 ? CrossFileDialog.OpenFolder("Extract to") : "";
                 if (folder.Length > 0) _ = Viewer.ExtractArchive(archive, folder);
             }
+            */
 
-            ImGui.Separator();
-            bool hasScene = Viewer.Scene != null;
+            // ImGui.Separator();
+           // bool hasScene = Viewer.Scene != null;
+            /*
             if (ImGui.MenuItem("Export scene to .glb…", "", false, hasScene)) {
                 string path = SavePath("Export scene", ".glb");
                 if (path != null) Viewer.ExportScene(path);
@@ -172,9 +178,10 @@ namespace Mk2.Viewer.Frames {
                 string path = SavePath("Screenshot", ".png");
                 if (path != null) Viewer.RequestScreenshot(path);
             }
+            */
 
-            ImGui.Separator();
-            if (ImGui.MenuItem("Exit")) Viewer.Close();
+            //ImGui.Separator();
+            // if (ImGui.MenuItem("Exit")) Viewer.Close();
             ImGui.EndMenu();
         }
 
@@ -187,7 +194,7 @@ namespace Mk2.Viewer.Frames {
         private static void RenderListMenu(string title, ref string filter, IEnumerable<string> names, Action<string> onPick) {
             if (!ImGui.BeginMenu(title)) return;
             ImGui.SetNextItemWidth(240);
-            ImGui.InputTextWithHint("##filter", "Filter", ref filter, 128);
+            // ImGui.InputTextWithHint("##filter", "Filter", ref filter, 128);
             ImGui.Separator();
             string activeFilter = filter;
             if (ImGui.BeginChild("##list", new Vec2(260, 360))) {

@@ -25,7 +25,12 @@ namespace Mk2.Viewer.ImGuiUi {
             ImGuiContextPtr context = Hexa.NET.ImGui.ImGui.CreateContext();
             Hexa.NET.ImGui.ImGui.SetCurrentContext(context);
             var io = Hexa.NET.ImGui.ImGui.GetIO();
-            unsafe { io.Fonts.AddFontDefault(); }
+            if (System.IO.File.Exists(@"C:\Windows\Fonts\arial.ttf"))
+                unsafe { io.Fonts.AddFontFromFileTTF(@"C:\Windows\Fonts\arial.ttf", 18f); }
+            else
+                unsafe { io.Fonts.AddFontDefault(); }
+
+            ImGui.StyleColorsClassic();
 
             io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset | ImGuiBackendFlags.RendererHasTextures;
             io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;

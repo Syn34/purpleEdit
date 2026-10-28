@@ -37,7 +37,7 @@ namespace Mk2.Viewer {
         public Vec2 FogRange = new Vec2(10000, 100000);
 
         public PropertiesView Properties { get; private set; } = PropertiesView.Empty;
-        public string Status { get; private set; } = "Ready";
+        public string Status { get; private set; } = "";
         public string LogText { get { lock (log) return log.ToString(); } }
         public bool Busy { get; private set; }
 
@@ -107,15 +107,26 @@ namespace Mk2.Viewer {
             try {
                 var game = await Task.Run(() => new GameData(source, SetStatus));
                 Game = game;
-                foreach (var line in game.Log) Log(line);
+
+                foreach (var line in game.Log) 
+                    Log(line);
+
                 ModelDb = new ModelDb(game.ReadBni("global.model.bni"));
-                if (!ModelDb.Has("default")) Log("global.model.bni not found");
+
+                if (!ModelDb.Has("default")) 
+                    Log("global.model.bni not found");
+
                 Levels = LevelLoader.LoadLevelList(game);
-                if (Levels.Count == 0) Log("levels.ini.bni not found");
+
+                if (Levels.Count == 0) 
+                    Log("levels.ini.bni not found");
+
                 Assets = new AssetCache(game);
                 SaveSetting("root", source);
+
                 Models = game.AllNames(".mdl").Select(Path.GetFileNameWithoutExtension).Distinct(StringComparer.OrdinalIgnoreCase)
                              .OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
+
                 SetStatus($"{source}: {Levels.Count} levels, {game.ChunkPackNames.Count()} chunk packs, {Models.Count} models");
             }
             catch (Exception exception) {
@@ -438,8 +449,9 @@ namespace Mk2.Viewer {
 
         // ---------------------------------------------------------------- misc
 
-        public void SetStatus(string status) => Status = status;
-
+        public void SetStatus(string status) {
+           // Status = status;
+        }
         public void Log(string line) {
             lock (log) log.Append(line.Replace("\n", "\r\n")).Append("\r\n");
         }

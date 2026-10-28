@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using Mk2.Game;
 
-namespace Mk2.Viewer.Rendering
-{
-    public sealed class ViewSettings
-    {
+namespace Mk2.Viewer.Rendering {
+    public sealed class ViewSettings {
         public bool Overlays = true;
         public bool Objects = true;
         public bool PropMarkers = false;
@@ -16,6 +14,7 @@ namespace Mk2.Viewer.Rendering
         public bool VertexColors = true;
         public bool Transparency = true;
         public bool Fog = true;
+        public bool EnvMapGlow = true;
         public float Brightness = 1.2f;
 
         public bool CameraInfo = true;
@@ -65,8 +64,7 @@ namespace Mk2.Viewer.Rendering
         public bool ObjectCollisionVisible(LevelObject levelObject) =>
             ObjectCollision && !HiddenChunks.Contains(levelObject.ChunkName) && !HiddenObjects.Contains(levelObject);
 
-        public void ClearSceneVisibility()
-        {
+        public void ClearSceneVisibility() {
             HiddenChunks.Clear();
             HiddenGroups.Clear();
             HiddenChunkCategories.Clear();

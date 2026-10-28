@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using System.Numerics;
 using OpenTK.Graphics.OpenGL4;
 
-namespace Mk2.Viewer.Rendering
-{
+namespace Mk2.Viewer.Rendering {
     /// <summary>Small helpers around raw GL objects. All math uses System.Numerics (row-vector convention).</summary>
-    public static class GlUtil
-    {
+    public static class GlUtil {
         private static readonly float[] matrixBuffer = new float[16];
 
-        public static void SetMatrix(int location, Matrix4x4 matrix)
-        {
+        public static void SetMatrix(int location, Matrix4x4 matrix) {
             if (location < 0) return;
             var buffer = matrixBuffer;
             buffer[0] = matrix.M11; buffer[1] = matrix.M12; buffer[2] = matrix.M13; buffer[3] = matrix.M14;
@@ -20,8 +17,7 @@ namespace Mk2.Viewer.Rendering
             buffer[12] = matrix.M41; buffer[13] = matrix.M42; buffer[14] = matrix.M43; buffer[15] = matrix.M44;
             GL.UniformMatrix4(location, 1, false, buffer);
         }
-        public static Matrix4x4 Perspective(float fovY, float aspect, float near, float far)
-        {
+        public static Matrix4x4 Perspective(float fovY, float aspect, float near, float far) {
             float focal = 1f / MathF.Tan(fovY / 2f);
             return new Matrix4x4(
                 focal / aspect, 0, 0, 0,
@@ -31,13 +27,11 @@ namespace Mk2.Viewer.Rendering
         }
     }
 
-    public sealed class ShaderProgram : IDisposable
-    {
+    public sealed class ShaderProgram : IDisposable {
         public int Handle { get; private set; }
         private readonly Dictionary<string, int> locations = new Dictionary<string, int>();
 
-        public ShaderProgram(string vertexSource, string fragmentSource)
-        {
+        public ShaderProgram(string vertexSource, string fragmentSource) {
             int vertexShader = Compile(ShaderType.VertexShader, vertexSource);
             int fragmentShader = Compile(ShaderType.FragmentShader, fragmentSource);
             Handle = GL.CreateProgram();
@@ -52,8 +46,7 @@ namespace Mk2.Viewer.Rendering
             GL.DeleteShader(fragmentShader);
         }
 
-        private static int Compile(ShaderType type, string source)
-        {
+        private static int Compile(ShaderType type, string source) {
             int shader = GL.CreateShader(type);
             GL.ShaderSource(shader, source);
             GL.CompileShader(shader);
@@ -64,10 +57,8 @@ namespace Mk2.Viewer.Rendering
 
         public void Use() => GL.UseProgram(Handle);
 
-        public int Loc(string name)
-        {
-            if (!locations.TryGetValue(name, out int location))
-            {
+        public int Loc(string name) {
+            if (!locations.TryGetValue(name, out int location)) {
                 location = GL.GetUniformLocation(Handle, name);
                 locations[name] = location;
             }
@@ -78,8 +69,7 @@ namespace Mk2.Viewer.Rendering
         private readonly Dictionary<int, Vector4> cache = new Dictionary<int, Vector4>();
         private readonly Dictionary<int, Matrix4x4> matrixCache = new Dictionary<int, Matrix4x4>();
 
-        private bool Changed(int location, Vector4 value)
-        {
+        private bool Changed(int location, Vector4 value) {
             if (cache.TryGetValue(location, out var old) && old == value) return false;
             cache[location] = value;
             return true;
@@ -88,8 +78,7 @@ namespace Mk2.Viewer.Rendering
         /// <summary>Forget cached values (call after the program is re-linked or another program changed state).</summary>
         public void ResetCache() { cache.Clear(); matrixCache.Clear(); }
 
-        public void Set(string name, Matrix4x4 matrix)
-        {
+        public void Set(string name, Matrix4x4 matrix) {
             int location = Loc(name);
             if (location < 0) return;
             if (matrixCache.TryGetValue(location, out var old) && old == matrix) return;
@@ -103,21 +92,18 @@ namespace Mk2.Viewer.Rendering
         public void Set(string name, Vector3 value) { int location = Loc(name); if (location >= 0 && Changed(location, new Vector4(value, 0))) GL.Uniform3(location, value.X, value.Y, value.Z); }
         public void Set(string name, Vector4 value) { int location = Loc(name); if (location >= 0 && Changed(location, value)) GL.Uniform4(location, value.X, value.Y, value.Z, value.W); }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             if (Handle != 0) GL.DeleteProgram(Handle);
             Handle = 0;
         }
     }
 
     /// <summary>Indexed triangle mesh with interleaved pos(3) nrm(3) uv(2) col(4).</summary>
-    public sealed class GpuMesh : IDisposable
-    {
+    public sealed class GpuMesh : IDisposable {
         public const int Stride = 12;
         public int Vao, Vbo, Ebo, IndexCount;
 
-        public static GpuMesh Create(float[] interleaved, uint[] indices, bool dynamic = false)
-        {
+        public static GpuMesh Create(float[] interleaved, uint[] indices, bool dynamic = false) {
             var mesh = new GpuMesh { IndexCount = indices.Length };
             mesh.Vao = GL.GenVertexArray();
             GL.BindVertexArray(mesh.Vao);
@@ -141,24 +127,21 @@ namespace Mk2.Viewer.Rendering
             return mesh;
         }
 
-        public void Draw()
-        {
+        public void Draw() {
             if (IndexCount == 0) return;
             GL.BindVertexArray(Vao);
             GL.DrawElements(PrimitiveType.Triangles, IndexCount, DrawElementsType.UnsignedInt, 0);
         }
 
         /// <summary>Replaces the interleaved vertex data (same vertex count as at creation).</summary>
-        public void UpdateVertices(float[] interleaved)
-        {
+        public void UpdateVertices(float[] interleaved) {
             if (Vbo == 0) return;
             GL.BindBuffer(BufferTarget.ArrayBuffer, Vbo);
             GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, interleaved.Length * sizeof(float), interleaved);
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             if (Vao != 0) GL.DeleteVertexArray(Vao);
             if (Vbo != 0) GL.DeleteBuffer(Vbo);
             if (Ebo != 0) GL.DeleteBuffer(Ebo);
@@ -167,12 +150,10 @@ namespace Mk2.Viewer.Rendering
     }
 
     /// <summary>Line list with pos(3) + rgba(4) per vertex.</summary>
-    public sealed class GpuLines : IDisposable
-    {
+    public sealed class GpuLines : IDisposable {
         public int Vao, Vbo, VertexCount;
 
-        public static GpuLines Create(List<float> data, bool dynamic = false)
-        {
+        public static GpuLines Create(List<float> data, bool dynamic = false) {
             var lines = new GpuLines { VertexCount = data.Count / 7 };
             lines.Vao = GL.GenVertexArray();
             GL.BindVertexArray(lines.Vao);
@@ -189,16 +170,14 @@ namespace Mk2.Viewer.Rendering
             return lines;
         }
 
-        public void Draw()
-        {
+        public void Draw() {
             if (VertexCount == 0) return;
             GL.BindVertexArray(Vao);
             GL.DrawArrays(PrimitiveType.Lines, 0, VertexCount);
         }
 
         /// <summary>Replaces the line data (any length).</summary>
-        public void Update(List<float> data)
-        {
+        public void Update(List<float> data) {
             if (Vbo == 0) return;
             var values = data.ToArray();
             GL.BindBuffer(BufferTarget.ArrayBuffer, Vbo);
@@ -207,16 +186,14 @@ namespace Mk2.Viewer.Rendering
             VertexCount = values.Length / 7;
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             if (Vao != 0) GL.DeleteVertexArray(Vao);
             if (Vbo != 0) GL.DeleteBuffer(Vbo);
             Vao = Vbo = 0;
         }
     }
 
-    public static class Shaders
-    {
+    public static class Shaders {
         public const string MeshVS = @"#version 330 core
 layout(location=0) in vec3 aPos;
 layout(location=1) in vec3 aNrm;
@@ -225,6 +202,8 @@ layout(location=3) in vec4 aCol;
 uniform mat4 uModel;
 uniform mat4 uViewProj;
 uniform vec2 uUVOffset;
+uniform mat4 uView;
+uniform int uEnv;
 out vec3 vNrm;
 out vec2 vUV;
 out vec4 vCol;
@@ -235,6 +214,11 @@ void main() {
     gl_Position = uViewProj * w;
     vNrm = mat3(uModel) * aNrm;
     vUV = aUV + uUVOffset;
+    if (uEnv == 1) {
+        // Sphere-map: UV from the view-space normal (stored UVs on these materials are placeholders)
+        vec3 en = normalize(mat3(uView) * mat3(uModel) * aNrm);
+        vUV = vec2(en.x * 0.5 + 0.5, 0.5 - en.y * 0.5);
+    }
     vCol = aCol;
 }";
 
